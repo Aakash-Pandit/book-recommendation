@@ -1,16 +1,15 @@
-FROM python:3.10
+FROM python:3.10-slim
 
-# Create working directory
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
-# Copy files
-COPY . .
-
-# Install dependencies
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Expose FastAPI port
+COPY . .
+
 EXPOSE 8000
 
-# Run the app
 CMD ["uvicorn", "application.api:application", "--host", "0.0.0.0", "--port", "8000"]

@@ -1,6 +1,6 @@
 # Book Recommendation System
 
-A Flask-based REST API that provides book recommendations using collaborative filtering and popularity-based ranking.
+A FastAPI-based REST API that provides book recommendations using collaborative filtering and popularity-based ranking.
 
 ## Overview
 
@@ -14,7 +14,7 @@ This project uses a pre-trained similarity model (built in the [notebooks/](note
 ```
 book-recommendation/
 ├── application/
-│   ├── api.py              # Flask routes
+│   ├── api.py              # FastAPI routes
 │   └── recommendation.py   # Recommendation logic
 ├── notebooks/
 │   ├── main.ipynb          # Data processing & model training
@@ -23,7 +23,13 @@ book-recommendation/
 │   ├── popular.pkl
 │   ├── pivot_table.pkl
 │   └── similarity_score.pkl
-├── run.py                  # App entrypoint
+├── tests/
+│   └── test_api.py         # API test cases
+├── .github/
+│   └── workflows/
+│       └── ci.yml          # GitHub Actions CI pipeline
+├── run.py                  # App entrypoint (uvicorn)
+├── pytest.ini
 ├── requirements.txt
 ├── Dockerfile
 ├── docker-compose.yml
@@ -36,7 +42,7 @@ book-recommendation/
 Health check.
 
 ```json
-{"message": "Welcome to the API!"}
+{"message": "Welcome to Book Recommendation API!"}
 ```
 
 ### `GET /api/popular_books`
@@ -81,7 +87,9 @@ make stop     # Stop the container
 make down     # Stop and remove the container
 ```
 
-The API will be available at `http://localhost:5000`.
+The API will be available at `http://localhost:8000`.
+
+Interactive API docs are available at `http://localhost:8000/docs`.
 
 ### Without Docker
 
@@ -90,9 +98,16 @@ pip install -r requirements.txt
 python run.py
 ```
 
+## Testing
+
+```bash
+make test          # Run tests via Docker
+pytest tests/ -v   # Run tests locally
+```
+
 ## Dependencies
 
 - Python 3.10
-- Flask + flask-cors
+- FastAPI + uvicorn
 - pandas, numpy
 - Pre-trained pickle models (included in `notebooks/`)
