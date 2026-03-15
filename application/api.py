@@ -1,25 +1,34 @@
-from flask import Flask, request, jsonify
-from flask_cors import CORS
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from pydantic import BaseModel
 
 from application.recommendation import top_popular_books, top_recommend_books
 
-application = Flask(__name__)
-CORS(application)
+application = FastAPI()
+application.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-@application.route("/", methods=["GET"])
+
+class RecommendRequest(BaseModel):
+    name_of_books: str
+    number_of_recommendations: int = 5
+
+
+@application.get("/")
 def home():
-    return jsonify({"message": "Welcome to the API!"})
+    return {"message": "Welcome to Book Recommendation API!"}
 
-@application.route("/api/popular_books", methods=["GET"])
+
+@application.get("/api/popular_books")
 def popular_books():
-    popular_books = top_popular_books()
-    return jsonify({"popular_books": popular_books})
+    return {"popular_books": top_popular_books()}
 
-@application.route("/api/recommend_books", methods=["POST"])
-def recommend_books():
-    data = request.get_json()
-    name_of_books = data.get("name_of_books", [])
-    number_of_recommendations = data.get("number_of_recommendations", 5)
-    
-    popular_books = top_recommend_books(name_of_books, number_of_recommendations)
-    return jsonify({"popular_books": popular_books})
+
+@application.post("/api/recommend_books")
+def recommend_books(body: RecommendRequest):
+    recommendations = top_recommend_books(body.name_of_books, body.number_of_recommendations)
+    return {"popular_books": recommendations}
