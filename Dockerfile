@@ -1,15 +1,17 @@
-FROM python:3.10
+FROM python:3.10-slim
 
-ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
 # Create working directory
 WORKDIR /app
 
-# Copy files
-COPY . .
-
-# Install dependencies
+# Install dependencies first for better layer caching
+COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY . .
 
 # Expose FastAPI port
 EXPOSE 8000
