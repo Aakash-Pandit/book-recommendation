@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from application.recommendation import top_popular_books, top_recommend_books
+from application.middleware_logger import LoggingMiddleware
 
 application = FastAPI()
 application.add_middleware(
@@ -11,6 +12,8 @@ application.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+application.add_middleware(LoggingMiddleware)
 
 
 class RecommendRequest(BaseModel):
