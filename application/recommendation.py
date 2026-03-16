@@ -20,10 +20,10 @@ def top_popular_books():
     
     return books_data
 
-def top_recommend_books(name_of_books, number_of_recommendations=5):
+def top_recommend_books(name_of_book, number_of_recommendations=5):
     suggestions = []
 
-    index = np.where(pivot_table.index == name_of_books)[0][0]
+    index = np.where(pivot_table.index == name_of_book)[0][0]
     similar_items = sorted(list(enumerate(similarity_score[index])), key=lambda x: x[1], reverse=True)[1:number_of_recommendations + 1]
 
     for index, avg_rating in similar_items:
