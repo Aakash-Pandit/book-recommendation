@@ -1,8 +1,12 @@
 import logging
+import os
 import queue
 import sys
 import threading
 from datetime import datetime, timezone
+
+LOG_FILE = os.getenv("LOG_FILE", "logs/app.log")
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
 
 log_queue = queue.Queue()
 
@@ -30,12 +34,17 @@ class Worker(threading.Thread):
             self._flush(batch)
 
     def _flush(self, batch):
-        for timestamp, level, endpoint, method, status_code, response_time, message in batch:
-            sys.stdout.write(
-                f"{timestamp} | {level:<8} | {method} {endpoint} | "
-                f"status={status_code} | {response_time:.3f}s | {message}\n"
-            )
+        lines = [
+            f"{timestamp} | {level:<8} | {method} {endpoint} | "
+            f"status={status_code} | {response_time:.3f}s | {message}\n"
+            for timestamp, level, endpoint, method, status_code, response_time, message in batch
+        ]
+        for line in lines:
+            sys.stdout.write(line)
         sys.stdout.flush()
+
+        with open(LOG_FILE, "a") as f:
+            f.writelines(lines)
 
 
 class AsyncHandler(logging.Handler):
