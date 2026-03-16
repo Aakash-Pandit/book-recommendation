@@ -62,7 +62,7 @@ Returns books similar to a given title using collaborative filtering.
 **Request body:**
 ```json
 {
-  "name_of_books": "The Da Vinci Code",
+  "name_of_book": "The Da Vinci Code",
   "number_of_recommendations": 5
 }
 ```
