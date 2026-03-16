@@ -68,31 +68,31 @@ def test_popular_books_empty(client):
 
 def test_recommend_books_returns_200(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS):
-        response = client.post("/api/recommend_books", json={"name_of_books": "Harry Potter"})
+        response = client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"})
     assert response.status_code == 200
 
 
 def test_recommend_books_response_structure(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS):
-        data = client.post("/api/recommend_books", json={"name_of_books": "Harry Potter"}).json()
+        data = client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"}).json()
     assert "popular_books" in data
 
 
 def test_recommend_books_content(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS):
-        data = client.post("/api/recommend_books", json={"name_of_books": "Harry Potter"}).json()
+        data = client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"}).json()
     assert data["popular_books"] == MOCK_RECOMMENDATIONS
 
 
 def test_recommend_books_default_count(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS) as mock_fn:
-        client.post("/api/recommend_books", json={"name_of_books": "Harry Potter"})
+        client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"})
     mock_fn.assert_called_once_with("Harry Potter", 5)
 
 
 def test_recommend_books_custom_count(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS) as mock_fn:
-        client.post("/api/recommend_books", json={"name_of_books": "Dune", "number_of_recommendations": 3})
+        client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": 3})
     mock_fn.assert_called_once_with("Dune", 3)
 
 
@@ -102,5 +102,5 @@ def test_recommend_books_missing_body(client):
 
 
 def test_recommend_books_invalid_count_type(client):
-    response = client.post("/api/recommend_books", json={"name_of_books": "Dune", "number_of_recommendations": "abc"})
+    response = client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": "abc"})
     assert response.status_code == 422
