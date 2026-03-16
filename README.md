@@ -14,21 +14,27 @@ This project uses a pre-trained similarity model (built in the [notebooks/](note
 ```
 book-recommendation/
 ├── application/
-│   ├── api.py              # FastAPI routes
-│   └── recommendation.py   # Recommendation logic
+│   ├── api.py                  # FastAPI routes
+│   ├── recommendation.py       # Recommendation logic
+│   ├── async_logger.py         # Async queue-based log handler
+│   ├── logger.py               # Logger configuration
+│   └── middleware_logger.py    # Request/response logging middleware
 ├── notebooks/
-│   ├── main.ipynb          # Data processing & model training
-│   ├── csv_data/           # Raw datasets (Books, Ratings, Users)
+│   ├── main.ipynb              # Data processing & model training
+│   ├── csv_data/               # Raw datasets (Books, Ratings, Users)
 │   ├── books.pkl
 │   ├── popular.pkl
 │   ├── pivot_table.pkl
 │   └── similarity_score.pkl
+├── logs/                       # Auto-created, git-ignored
+│   └── app.log
 ├── tests/
-│   └── test_api.py         # API test cases
+│   ├── test_api.py             # API test cases
+│   └── test_logging.py         # Logging test cases
 ├── .github/
 │   └── workflows/
-│       └── ci.yml          # GitHub Actions CI pipeline
-├── run.py                  # App entrypoint (uvicorn)
+│       └── ci.yml              # GitHub Actions CI pipeline
+├── run.py                      # App entrypoint (uvicorn)
 ├── pytest.ini
 ├── requirements.txt
 ├── Dockerfile
@@ -105,9 +111,27 @@ make test          # Run tests via Docker
 pytest tests/ -v   # Run tests locally
 ```
 
+## Logging
+
+Every request is logged asynchronously via a queue-based worker to avoid blocking request handlers.
+
+Logs are written to:
+- **stdout** — visible in the terminal or `docker compose logs -f`
+- **`logs/app.log`** — persistent log file (auto-created, git-ignored)
+
+Each log line follows this format:
+```
+2026-03-16 10:23:01 | INFO     | POST /api/recommend_books | status=200 | 0.012s | API request processed
+```
+
+Override the log file path with the `LOG_FILE` env var:
+```bash
+LOG_FILE=logs/custom.log python run.py
+```
+
 ## Dependencies
 
 - Python 3.10
-- FastAPI + uvicorn
+- FastAPI + uvicorn + starlette
 - pandas, numpy
 - Pre-trained pickle models (included in `notebooks/`)
