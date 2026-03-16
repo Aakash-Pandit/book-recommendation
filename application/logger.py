@@ -1,9 +1,9 @@
 import logging
-from async_clickhouse_logger import AsyncClickHouseHandler
+
+from application.async_logger import AsyncHandler
 
 logger = logging.getLogger("fastapi_logger")
 logger.setLevel(logging.INFO)
+logger.propagate = False
 
-handler = AsyncClickHouseHandler()
-
-logger.addHandler(handler)
+logger.addHandler(AsyncHandler())
