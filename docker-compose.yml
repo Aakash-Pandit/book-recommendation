@@ -9,3 +9,19 @@ services:
       - "8000:8000"
     volumes:
       - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - clickhouse
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+      - ./compose/clickhouse/override-networks.xml:/etc/clickhouse-server/users.d/override-networks.xml
+
+volumes:
+  clickhouse_data:
