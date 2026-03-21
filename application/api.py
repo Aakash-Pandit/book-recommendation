@@ -23,7 +23,7 @@ class RecommendRequest(BaseModel):
 
 @application.get("/")
 def home():
-    return {"message": "Welcome to Book Recommendation API!"}
+    return {"message": "Welcome to Book Recommendation System!"}
 
 
 @application.get("/api/popular_books")
