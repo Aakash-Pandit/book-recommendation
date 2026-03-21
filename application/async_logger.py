@@ -48,10 +48,7 @@ class Worker(threading.Thread):
         while True:
             batch = []
 
-            try:
-                entry = log_queue.get(timeout=1.0)
-            except queue.Empty:
-                continue
+            entry = log_queue.get()
 
             if entry is _SENTINEL:
                 break
