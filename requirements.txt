@@ -7,3 +7,5 @@ numpy==2.2.3
 
 pytest==9.0.2
 httpx==0.28.1
+
+clickhouse-connect==0.14.1
