@@ -35,9 +35,9 @@ class Worker(threading.Thread):
 
     def _flush(self, batch):
         lines = [
-            f"{timestamp} | {level:<8} | {method} {endpoint} | "
-            f"status={status_code} | {response_time:.3f}s | {message}\n"
-            for timestamp, level, endpoint, method, status_code, response_time, message in batch
+            f"{timestamp} | {level:<8} | {method}: {endpoint} | "
+            f"status={status_code} | {response_time:.3f}s | payload={payload} | {message}\n"
+            for timestamp, level, endpoint, method, status_code, response_time, payload, message in batch
         ]
         for line in lines:
             sys.stdout.write(line)
@@ -57,6 +57,7 @@ class AsyncHandler(logging.Handler):
             getattr(record, "method", "-"),
             getattr(record, "status_code", 0),
             getattr(record, "response_time", 0.0),
+            getattr(record, "payload", "-"),
             record.getMessage(),
         ))
 
