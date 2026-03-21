@@ -85,6 +85,12 @@ class Worker(threading.Thread):
         with open(LOG_FILE, "a") as f:
             f.writelines(json_lines)
 
+        try:
+            from application.clickhouse_sink import insert_batch
+            insert_batch(batch)
+        except Exception:
+            pass  # never let ClickHouse failure affect the app
+
     def _rotate_if_needed(self):
         if not os.path.exists(LOG_FILE):
             return
