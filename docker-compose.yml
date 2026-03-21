@@ -2,7 +2,7 @@ services:
   fastapi:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: compose/Dockerfile
     image: book_recommendation_system
     container_name: book_recommendation_api
     ports:
