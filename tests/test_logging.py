@@ -134,6 +134,11 @@ class TestAsyncHandler:
 
 class TestWorker:
 
+    @pytest.fixture(autouse=True)
+    def no_clickhouse(self):
+        with patch("application.clickhouse_sink.insert_batch"):
+            yield
+
     def _make_entry(self, **kwargs):
         from application.async_logger import LogEntry
         defaults = dict(
