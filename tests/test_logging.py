@@ -136,7 +136,9 @@ class TestWorker:
 
     @pytest.fixture(autouse=True)
     def no_clickhouse(self):
-        with patch("application.clickhouse_sink.insert_batch"):
+        from application import async_logger
+        with patch("application.clickhouse_sink.insert_batch"), \
+             patch.object(async_logger.worker, "_flush"):
             yield
 
     def _make_entry(self, **kwargs):
