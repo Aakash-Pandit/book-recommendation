@@ -2,7 +2,7 @@ import os
 import uvicorn
 
 if __name__ == "__main__":
-    dev_mode = os.getenv("APP_ENV", "production") == "development"
+    dev_mode = os.getenv("APP_ENV", "development") == "development"
     uvicorn.run(
         "application.api:application",
         host="0.0.0.0",
