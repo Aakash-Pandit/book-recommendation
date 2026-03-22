@@ -22,6 +22,7 @@ services:
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./compose/clickhouse/override-networks.xml:/etc/clickhouse-server/users.d/override-networks.xml
+      - ./compose/clickhouse/init.sql:/docker-entrypoint-initdb.d/init.sql
     healthcheck:
       test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
       interval: 10s
@@ -34,10 +35,8 @@ services:
     image: grafana/grafana:11.4.0
     ports:
       - "3000:3000"
-    environment:
-      - GF_SECURITY_ADMIN_USER=admin
-      - GF_SECURITY_ADMIN_PASSWORD=admin
-      - GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+    env_file:
+      - .env
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
