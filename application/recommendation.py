@@ -1,12 +1,25 @@
+import os
 import pickle
 
 import numpy as np
 
-popular_df = pickle.load(open("notebooks/popular.pkl", "rb"))
+_NOTEBOOKS_DIR = os.getenv("NOTEBOOKS_DIR", "notebooks")
 
-pivot_table = pickle.load(open("notebooks/pivot_table.pkl", "rb"))
-books = pickle.load(open("notebooks/books.pkl", "rb"))
-similarity_score = pickle.load(open("notebooks/similarity_score.pkl", "rb"))
+
+def _load(filename: str):
+    path = os.path.join(_NOTEBOOKS_DIR, filename)
+    try:
+        with open(path, "rb") as f:
+            return pickle.load(f)
+    except FileNotFoundError:
+        raise RuntimeError(f"Required model file not found: {path}")
+
+
+popular_df = _load("popular.pkl")
+pivot_table = _load("pivot_table.pkl")
+books = _load("books.pkl")
+similarity_score = _load("similarity_score.pkl")
+
 
 def top_popular_books():
     books_data = []
@@ -14,25 +27,26 @@ def top_popular_books():
         book_info = {
             "title": row["Book-Title"],
             "author": row["Book-Author"] if "Book-Author" in popular_df.columns else "Unknown Author",
-            "image_url": row["Image-URL-M"] if "Image-URL-M" in popular_df.columns else None
+            "image_url": row["Image-URL-M"] if "Image-URL-M" in popular_df.columns else None,
         }
         books_data.append(book_info)
-    
     return books_data
 
-def top_recommend_books(name_of_book, number_of_recommendations=5):
-    suggestions = []
 
+def top_recommend_books(name_of_book: str, number_of_recommendations: int = 5):
     index = np.where(pivot_table.index == name_of_book)[0][0]
-    similar_items = sorted(list(enumerate(similarity_score[index])), key=lambda x: x[1], reverse=True)[1:number_of_recommendations + 1]
+    similar_items = sorted(
+        enumerate(similarity_score[index]),
+        key=lambda x: x[1],
+        reverse=True,
+    )[1:number_of_recommendations + 1]
 
-    for index, avg_rating in similar_items:
-        data = {}
-        
-        temp_df = books[books["Book-Title"] == pivot_table.index[index]]
-        data["title"] = list(temp_df.drop_duplicates("Book-Title")["Book-Title"].values)[0]
-        data["author"] = list(temp_df.drop_duplicates("Book-Title")["Book-Author"].values)[0]
-        data["images"] = list(temp_df.drop_duplicates("Book-Title")["Image-URL-M"].values)[0]
-        
-        suggestions.append(data)
+    suggestions = []
+    for item_index, _ in similar_items:
+        temp_df = books[books["Book-Title"] == pivot_table.index[item_index]].drop_duplicates("Book-Title")
+        suggestions.append({
+            "title": temp_df["Book-Title"].values[0],
+            "author": temp_df["Book-Author"].values[0],
+            "image_url": temp_df["Image-URL-M"].values[0],
+        })
     return suggestions
