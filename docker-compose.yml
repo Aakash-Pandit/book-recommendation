@@ -23,7 +23,7 @@ services:
       - clickhouse_data:/var/lib/clickhouse
       - ./compose/clickhouse/override-networks.xml:/etc/clickhouse-server/users.d/override-networks.xml
     healthcheck:
-      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      test: ["CMD-SHELL", "clickhouse-client --query 'SELECT 1'"]
       interval: 10s
       timeout: 5s
       retries: 5
