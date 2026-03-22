@@ -7,24 +7,31 @@ services:
     container_name: book_recommendation_api
     ports:
       - "8000:8000"
-    volumes:
-      - .:/app
     env_file:
       - .env
     depends_on:
-      - clickhouse
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
 
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:24.3
     ports:
       - "8123:8123"
       - "9000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
       - ./compose/clickhouse/override-networks.xml:/etc/clickhouse-server/users.d/override-networks.xml
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8123/ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
 
   grafana:
-    image: grafana/grafana:latest
+    image: grafana/grafana:11.4.0
     ports:
       - "3000:3000"
     environment:
@@ -34,7 +41,9 @@ services:
     volumes:
       - grafana_data:/var/lib/grafana
     depends_on:
-      - clickhouse
+      clickhouse:
+        condition: service_healthy
+    restart: unless-stopped
 
 volumes:
   clickhouse_data:
