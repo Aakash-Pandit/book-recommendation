@@ -60,7 +60,7 @@ class Worker(threading.Thread):
                     entry = log_queue.get_nowait()
                     if entry is _SENTINEL:
                         self._flush(batch)
-                        return
+                        return  # exit run() entirely, not just the inner loop
                     batch.append(entry)
                     if len(batch) >= 50:
                         break
@@ -125,7 +125,7 @@ class AsyncHandler(logging.Handler):
         try:
             log_queue.put_nowait(entry)
         except queue.Full:
-            pass  # drop rather than block the request thread
+            sys.stderr.write("[async_logger] queue full, log entry dropped\n")
 
 
 def _shutdown():
