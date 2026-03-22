@@ -82,33 +82,102 @@ Returns books similar to a given title using collaborative filtering.
 **Response:**
 ```json
 {
-  "popular_books": [
-    {"title": "...", "author": "...", "images": "..."}
+  "recommendations": [
+    {"title": "...", "author": "...", "image_url": "..."}
   ]
 }
 ```
 
-## Running Locally
+## Prerequisites
 
-### With Docker (recommended)
+- [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/) installed
+- Ports `8000`, `8123`, `9000`, `3000` free on your machine
+
+---
+
+## Quick Start
+
+### 1. Clone the repo
 
 ```bash
-make build    # Build the Docker image
-make start    # Start the container
-make stop     # Stop the container
-make down     # Stop and remove the container
+git clone <repo-url>
+cd book-recommendation
 ```
 
-The API will be available at `http://localhost:8000`.
+### 2. Create the `.env` file
 
-Interactive API docs are available at `http://localhost:8000/docs`.
+Create a `.env` file in the project root with the following content:
 
-### Without Docker
+```env
+# ClickHouse
+CLICKHOUSE_HOST=clickhouse
+CLICKHOUSE_PORT=8123
+CLICKHOUSE_USER=default
+CLICKHOUSE_PASSWORD=
+CLICKHOUSE_DB=clickhouse
+SERVICE_NAME=book-recommendation
+
+# Grafana
+GF_SECURITY_ADMIN_USER=admin
+GF_SECURITY_ADMIN_PASSWORD=admin
+GF_INSTALL_PLUGINS=grafana-clickhouse-datasource
+```
+
+> `.env` is git-ignored — never commit it with real credentials.
+
+### 3. Start the full stack
+
+```bash
+docker compose up -d
+```
+
+This starts three services:
+
+| Service | URL | Credentials |
+|---|---|---|
+| FastAPI | `http://localhost:8000` | — |
+| ClickHouse | `http://localhost:8123/play` | user: `default`, password: _(empty)_ |
+| Grafana | `http://localhost:3000` | `admin / admin` |
+
+On first boot, `compose/clickhouse/init.sql` automatically creates the `clickhouse` database and `app_logs` table — no manual SQL needed.
+
+### 4. Verify everything is running
+
+```bash
+docker compose ps
+```
+
+All three services should show `Up`.
+
+```bash
+# Test the API
+curl http://localhost:8000/
+curl http://localhost:8000/api/popular_books
+
+# Verify logs are reaching ClickHouse
+curl -X POST "http://localhost:8123" \
+  --data "SELECT count() FROM clickhouse.app_logs"
+```
+
+### 5. Stop the stack
+
+```bash
+docker compose down        # stop containers, keep volumes
+docker compose down -v     # stop containers AND delete all data
+```
+
+---
+
+## Running Locally (without Docker)
 
 ```bash
 pip install -r requirements.txt
 python run.py
 ```
+
+> ClickHouse and Grafana require Docker. Running without Docker only starts the FastAPI server; logs will be written to stdout and `logs/app.log` only.
+
+---
 
 ## Testing
 
@@ -281,22 +350,125 @@ Configured via `.env` (loaded by docker-compose into the FastAPI container):
 | `CLICKHOUSE_DB` | `clickhouse` | Database name |
 | `SERVICE_NAME` | `book-recommendation` | Appears in every log row |
 
-### Grafana dashboard setup
+### Grafana setup (step by step)
 
-1. Open `http://localhost:3000` — login `admin / admin`
-2. Go to **Connections → Data Sources → Add data source → ClickHouse**
-3. Fill in:
-   ```
-   Server address:   clickhouse
-   Server port:      9000
-   Username:         default
-   Password:         (empty)
-   Default database: clickhouse
-   ```
-4. Click **Save & Test**
-5. Go to **Dashboards → New → Add visualization**, select ClickHouse, and use any query from the section above
+The `grafana-clickhouse-datasource` plugin is installed automatically on first boot via `GF_INSTALL_PLUGINS` — no manual plugin installation needed.
 
-The `grafana-clickhouse-datasource` plugin is installed automatically via `GF_INSTALL_PLUGINS` in `docker-compose.yml`.
+#### Step 1 — Open Grafana
+
+Go to `http://localhost:3000` and log in with `admin / admin`.
+Grafana may prompt you to change the password — you can skip this.
+
+#### Step 2 — Add ClickHouse as a data source
+
+1. Click **Connections** in the left sidebar
+2. Click **Add new connection**
+3. Search for **ClickHouse** and click it
+4. Click **Add new data source** (top right)
+5. Fill in the following fields:
+
+   | Field | Value |
+   |---|---|
+   | Server address | `clickhouse` |
+   | Server port | `9000` |
+   | Protocol | `Native` |
+   | Username | `default` |
+   | Password | _(leave empty)_ |
+   | Default database | `clickhouse` |
+
+6. Click **Save & Test** — you should see **"Data source is working"**
+
+#### Step 3 — Create a dashboard
+
+1. Click **Dashboards** in the left sidebar
+2. Click **New → New dashboard**
+3. Click **Add visualization**
+4. Select **ClickHouse** as the data source
+5. Switch the query editor to **Code** mode (toggle at top right of the query box)
+
+#### Step 4 — Add panels
+
+Paste each SQL query below into a panel. Set the visualization type as noted.
+
+**Panel: Request rate over time** — visualization: `Time series`
+```sql
+SELECT
+    toStartOfMinute(timestamp) AS time,
+    count() AS requests
+FROM clickhouse.app_logs
+WHERE $__timeFilter(timestamp)
+GROUP BY time
+ORDER BY time
+```
+
+**Panel: Error rate over time** — visualization: `Time series`
+```sql
+SELECT
+    toStartOfMinute(timestamp) AS time,
+    countIf(status_code >= 400) AS errors,
+    countIf(status_code < 400)  AS success
+FROM clickhouse.app_logs
+WHERE $__timeFilter(timestamp)
+GROUP BY time
+ORDER BY time
+```
+
+**Panel: Avg response time per endpoint** — visualization: `Bar chart`
+```sql
+SELECT
+    endpoint,
+    round(avg(response_time) * 1000, 2) AS avg_ms
+FROM clickhouse.app_logs
+WHERE $__timeFilter(timestamp)
+GROUP BY endpoint
+ORDER BY avg_ms DESC
+```
+
+**Panel: Requests by status code** — visualization: `Pie chart`
+```sql
+SELECT
+    toString(status_code) AS status,
+    count() AS total
+FROM clickhouse.app_logs
+WHERE $__timeFilter(timestamp)
+GROUP BY status
+ORDER BY total DESC
+```
+
+**Panel: Recent errors** — visualization: `Table`
+```sql
+SELECT
+    timestamp, method, endpoint,
+    status_code, request_id, payload
+FROM clickhouse.app_logs
+WHERE level = 'ERROR'
+    AND $__timeFilter(timestamp)
+ORDER BY timestamp DESC
+LIMIT 50
+```
+
+> `$__timeFilter(timestamp)` is a Grafana macro — it automatically applies the dashboard time range picker to your query.
+
+#### Step 5 — Set time range and auto-refresh
+
+- Top right corner: change the time picker to **Last 15 minutes** or **Last 1 hour**
+- Enable **Auto refresh** → set to `10s` for live updates
+
+#### Step 6 — Save the dashboard
+
+Click the **Save** icon (top right), name it `Book Recommendation API`, and click **Save**.
+
+#### Step 7 — Generate traffic to populate panels
+
+```bash
+curl http://localhost:8000/
+curl http://localhost:8000/api/popular_books
+curl -X POST http://localhost:8000/api/recommend_books \
+  -H "Content-Type: application/json" \
+  -d '{"name_of_book": "The Da Vinci Code", "number_of_recommendations": 5}'
+```
+
+Refresh the dashboard — panels should now show data.
 
 ---
 
