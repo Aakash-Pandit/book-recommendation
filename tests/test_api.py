@@ -9,8 +9,8 @@ MOCK_POPULAR_BOOKS = [
 ]
 
 MOCK_RECOMMENDATIONS = [
-    {"title": "The Hobbit", "author": "J.R.R. Tolkien", "images": "http://example.com/hobbit.jpg"},
-    {"title": "Dune", "author": "Frank Herbert", "images": "http://example.com/dune.jpg"},
+    {"title": "The Hobbit", "author": "J.R.R. Tolkien", "image_url": "http://example.com/hobbit.jpg"},
+    {"title": "Dune", "author": "Frank Herbert", "image_url": "http://example.com/dune.jpg"},
 ]
 
 
@@ -75,13 +75,13 @@ def test_recommend_books_returns_200(client):
 def test_recommend_books_response_structure(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS):
         data = client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"}).json()
-    assert "popular_books" in data
+    assert "recommendations" in data
 
 
 def test_recommend_books_content(client):
     with patch("application.api.top_recommend_books", return_value=MOCK_RECOMMENDATIONS):
         data = client.post("/api/recommend_books", json={"name_of_book": "Harry Potter"}).json()
-    assert data["popular_books"] == MOCK_RECOMMENDATIONS
+    assert data["recommendations"] == MOCK_RECOMMENDATIONS
 
 
 def test_recommend_books_default_count(client):
@@ -104,3 +104,25 @@ def test_recommend_books_missing_body(client):
 def test_recommend_books_invalid_count_type(client):
     response = client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": "abc"})
     assert response.status_code == 422
+
+
+def test_recommend_books_count_zero_rejected(client):
+    response = client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": 0})
+    assert response.status_code == 422
+
+
+def test_recommend_books_negative_count_rejected(client):
+    response = client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": -1})
+    assert response.status_code == 422
+
+
+def test_recommend_books_count_above_max_rejected(client):
+    response = client.post("/api/recommend_books", json={"name_of_book": "Dune", "number_of_recommendations": 51})
+    assert response.status_code == 422
+
+
+def test_recommend_books_unknown_book_returns_400(client):
+    with patch("application.api.top_recommend_books", side_effect=IndexError):
+        response = client.post("/api/recommend_books", json={"name_of_book": "Unknown Book XYZ"})
+    assert response.status_code == 400
+    assert "not available" in response.json()["detail"]
