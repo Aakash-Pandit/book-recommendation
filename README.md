@@ -1,6 +1,6 @@
 # Book Recommendation System
 
-A FastAPI-based REST API that provides book recommendations using collaborative filtering and popularity-based ranking.
+A FastAPI-based REST API that provides book recommendations using collaborative filtering and popularity-based ranking, with structured request logging to ClickHouse and observability dashboards via Grafana.
 
 ## Overview
 
@@ -8,6 +8,8 @@ This project uses a pre-trained similarity model (built in the [notebooks/](note
 
 - **Popular books** — top books ranked by rating count and average rating
 - **Collaborative filtering** — similar books based on a user-item pivot table and cosine similarity scores
+
+Every API request is logged asynchronously to **ClickHouse** (columnar database) for queryable analytics. **Grafana** connects to ClickHouse to provide live dashboards — request rate, error rate, response times, and per-endpoint breakdowns.
 
 ## Project Structure
 
